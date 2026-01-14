@@ -57,7 +57,20 @@ def generate_sign(sign_text: str) -> Optional[Image.Image]:
     """
     Chapter 2: Generate a neon sign with specific text.
     """
-    # TODO: Implement in Chapter 2
+    client = get_client()
+    if not client: return None
+
+    base_prompt = "A dark, rainy cyberpunk alleyway with a heavy iron door."
+    full_prompt = f"{base_prompt} A neon sign above it reads: '{sign_text}'"
+    
+    try:
+        response = client.models.generate_content(
+            model='gemini-3-pro-image-preview',
+            contents=[full_prompt]
+        )
+        return _get_image_from_response(response)
+    except Exception as e:
+        print(f"Error: {e}")
     return None
 
 # --- Chapter 3: The Wide Angle ---

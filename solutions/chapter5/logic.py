@@ -57,7 +57,20 @@ def generate_sign(sign_text: str) -> Optional[Image.Image]:
     """
     Chapter 2: Generate a neon sign with specific text.
     """
-    # TODO: Implement in Chapter 2
+    client = get_client()
+    if not client: return None
+
+    base_prompt = "A dark, rainy cyberpunk alleyway with a heavy iron door."
+    full_prompt = f"{base_prompt} A neon sign above it reads: '{sign_text}'"
+    
+    try:
+        response = client.models.generate_content(
+            model='gemini-3-pro-image-preview',
+            contents=[full_prompt]
+        )
+        return _get_image_from_response(response)
+    except Exception as e:
+        print(f"Error: {e}")
     return None
 
 # --- Chapter 3: The Wide Angle ---
@@ -65,7 +78,20 @@ def generate_wide_shot(prompt: str) -> Optional[Image.Image]:
     """
     Chapter 3: Generate a 16:9 wide shot.
     """
-    # TODO: Implement in Chapter 3
+    client = get_client()
+    if not client: return None
+    
+    # Codelab Instruction: "Append aspect ratio to the prompt"
+    full_prompt = prompt + " Aspect Ratio 16:9"
+    
+    try:
+        response = client.models.generate_content(
+            model='gemini-3-pro-image-preview',
+            contents=[full_prompt]
+        )
+        return _get_image_from_response(response)
+    except Exception as e:
+        print(f"Error: {e}")
     return None
 
 # --- Chapter 4: Setting the Mood ---
@@ -73,7 +99,19 @@ def generate_lit_scene(prompt: str) -> Optional[Image.Image]:
     """
     Chapter 4: Generate a scene with specific lighting (Chiaroscuro, etc.)
     """
-    # TODO: Implement in Chapter 4
+    client = get_client()
+    if not client: return None
+    
+    # User is expected to add lighting keywords to the prompt
+    
+    try:
+        response = client.models.generate_content(
+            model='gemini-3-pro-image-preview',
+            contents=[prompt]
+        )
+        return _get_image_from_response(response)
+    except Exception as e:
+        print(f"Error: {e}")
     return None
 
 # --- Chapter 5: The Style Trap ---
@@ -81,7 +119,18 @@ def generate_style_transfer(prompt: str, reference_image: Image.Image) -> Option
     """
     Chapter 5: Generate Unit 9 in a specific style using a reference image.
     """
-    # TODO: Implement in Chapter 5
+    client = get_client()
+    if not client: return None
+    
+    # Multimodal input: text prompt + reference image
+    try:
+        response = client.models.generate_content(
+            model='gemini-3-pro-image-preview',
+            contents=[prompt, reference_image]
+        )
+        return _get_image_from_response(response)
+    except Exception as e:
+        print(f"Error: {e}")
     return None
 
 # --- Chapter 6: The Masterpiece ---
