@@ -1,4 +1,5 @@
 import os
+import io
 from google import genai
 from google.genai import types
 from PIL import Image
@@ -10,6 +11,25 @@ def get_client():
         print("⚠️ GOOGLE_API_KEY not found in environment.")
         return None
     return genai.Client(api_key=api_key)
+
+def _get_image_from_response(response):
+    """Helper to extract PIL Image from generate_content response."""
+    try:
+        # Check for inline_data (standard for images in some SDK versions)
+        if response.candidates and response.candidates[0].content.parts:
+            for part in response.candidates[0].content.parts:
+                if part.inline_data:
+                    return Image.open(io.BytesIO(part.inline_data.data))
+                
+        # Check if the SDK returns it differently (e.g. specialized response)
+        # For gemini-3-pro-image-preview, dynamic typing might return strict objects.
+        # But generally, we look for bytes.
+        
+        # Fallback dump for debugging if needed (not implemented here)
+        pass
+    except Exception as e:
+        print(f"Error parsing response: {e}")
+    return None
 
 # --- Chapter 1: Ink & Fur ---
 def generate_hero(prompt: str) -> Image.Image:
@@ -23,15 +43,11 @@ def generate_hero(prompt: str) -> Image.Image:
     print(f"Generating Hero with prompt: {prompt}")
     
     try:
-        response = client.models.generate_images(
+        response = client.models.generate_content(
             model='gemini-3-pro-image-preview',
-            prompt=prompt,
-            config=types.GenerateImagesConfig(
-                number_of_images=1,
-            )
+            contents=[prompt]
         )
-        if response.generated_images:
-            return response.generated_images[0].image
+        return _get_image_from_response(response)
     except Exception as e:
         print(f"Error: {e}")
     
@@ -49,15 +65,11 @@ def generate_sign(sign_text: str) -> Image.Image:
     full_prompt = f"{base_prompt} A neon sign above it reads: '{sign_text}'"
     
     try:
-        response = client.models.generate_images(
+        response = client.models.generate_content(
             model='gemini-3-pro-image-preview',
-            prompt=full_prompt,
-            config=types.GenerateImagesConfig(
-                number_of_images=1,
-            )
+            contents=[full_prompt]
         )
-        if response.generated_images:
-            return response.generated_images[0].image
+        return _get_image_from_response(response)
     except Exception as e:
         print(f"Error: {e}")
     return None
@@ -70,18 +82,15 @@ def generate_wide_shot(prompt: str) -> Image.Image:
     client = get_client()
     if not client: return None
     
+    # Codelab Instruction: "Append aspect ratio to the prompt"
     full_prompt = prompt + " Aspect Ratio 16:9"
     
     try:
-        response = client.models.generate_images(
+        response = client.models.generate_content(
             model='gemini-3-pro-image-preview',
-            prompt=full_prompt,
-            config=types.GenerateImagesConfig(
-                number_of_images=1,
-            )
+            contents=[full_prompt]
         )
-        if response.generated_images:
-            return response.generated_images[0].image
+        return _get_image_from_response(response)
     except Exception as e:
         print(f"Error: {e}")
     return None
@@ -94,19 +103,14 @@ def generate_lit_scene(prompt: str) -> Image.Image:
     client = get_client()
     if not client: return None
     
-    # Ensure lighting keywords are present, or append them if this was a rigorous check.
-    # For the solution, we'll just run the prompt as is, assuming the user added them.
+    # User is expected to add lighting keywords to the prompt
     
     try:
-        response = client.models.generate_images(
+        response = client.models.generate_content(
             model='gemini-3-pro-image-preview',
-            prompt=prompt,
-            config=types.GenerateImagesConfig(
-                number_of_images=1,
-            )
+            contents=[prompt]
         )
-        if response.generated_images:
-            return response.generated_images[0].image
+        return _get_image_from_response(response)
     except Exception as e:
         print(f"Error: {e}")
     return None
@@ -121,13 +125,11 @@ def generate_style_transfer(prompt: str, reference_image: Image.Image) -> Image.
     
     # Multimodal input: text prompt + reference image
     try:
-        response = client.models.generate_images(
+        response = client.models.generate_content(
             model='gemini-3-pro-image-preview',
-            prompt=prompt,
+            contents=[prompt, reference_image]
         )
-
-        if response.generated_images:
-            return response.generated_images[0].image
+        return _get_image_from_response(response)
     except Exception as e:
         print(f"Error: {e}")
     return None
@@ -143,16 +145,11 @@ def generate_final(prompt: str) -> Image.Image:
     full_prompt = prompt + " , masterpiece, best quality, 8k, highly detailed"
     
     try:
-        response = client.models.generate_images(
+        response = client.models.generate_content(
             model='gemini-3-pro-image-preview',
-            prompt=full_prompt,
-            config=types.GenerateImagesConfig(
-                number_of_images=1,
-                # aspect_ratio="16:9" # Optional enhancement
-            )
+            contents=[full_prompt]
         )
-        if response.generated_images:
-            return response.generated_images[0].image
+        return _get_image_from_response(response)
     except Exception as e:
         print(f"Error: {e}")
     return None

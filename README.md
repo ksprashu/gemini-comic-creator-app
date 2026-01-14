@@ -64,8 +64,16 @@ uv run python app.py
 ```
 The application will be available at `http://localhost:8080`.
 
-## 📖 Codelab Context
-This repository is the companion application for the **Gemini Comic Creator** codelab. It is designed to demonstrate "Vibe Coding" where users collaborate with AI to build sophisticated multimodal applications.
+## 📖 Codelab Companion
+This repository is the companion application for the **Gemini Comic Creator** codelab.
+
+👉 **[Start the Codelab](https://codelabs.developers.google.com/gemini-comic-creator)**
+
+### 🔄 Workflow
+1.  **Read the Codelab Step**: Understand the objective (e.g., "Generate Unit 9").
+2.  **Edit Code**: Open `logic.py` and implement the required function.
+3.  **Restart App**: Stop the running process (`Ctrl+C`) and run `uv run python app.py` again to apply changes.
+4.  **Verify**: Open the App in your browser, navigate to the relevant Chapter Tab, and test your logic.
 
 ---
 © 2026 Gemini Labs. Restricted access protocols in effect.

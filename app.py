@@ -11,7 +11,8 @@ import verifier
 load_dotenv()
 
 # --- Assets ---
-ASSETS_DIR = "assets"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 IMG_LOCKED = os.path.join(ASSETS_DIR, "ui_locked.png")
 IMG_SUCCESS = os.path.join(ASSETS_DIR, "ui_success.png")
 IMG_FAIL = os.path.join(ASSETS_DIR, "ui_fail.png")
@@ -32,12 +33,38 @@ def run_diagnostics():
         return "SYSTEM_CHECK: OPTIMAL.\n> Environment Variables: LOADED\n> API Key: DETECTED (Valid Format)"
     return "SYSTEM_CHECK: FAILED.\n> API Key: MISSING. Please configure .env"
 
+def update_footer(chapter):
+    """Updates the footer progress bar based on current chapter."""
+    try:
+        idx = CHAPTERS.index(chapter)
+        progress = (idx / (len(CHAPTERS) - 1)) * 100
+    except ValueError:
+        progress = 0
+    
+    # ASCII Progress Bar
+    bar_length = 20
+    filled_length = int(bar_length * progress // 100)
+    bar = "█" * filled_length + "." * (bar_length - filled_length)
+    
+    return f"SYSTEM STATUS: {int(progress)}% [{bar}] // CURRENT PHASE: {chapter.upper()}"
+
+
 def unlock_chapter(current_chapter, output_log):
     if "OPTIMAL" in output_log or "SUCCESS" in output_log:
-        return gr.update(visible=False), gr.update(visible=True)
-    return gr.update(visible=True), gr.update(visible=False)
+        return gr.update(visible=False), gr.update(visible=True), update_footer(current_chapter)
+    return gr.update(visible=True), gr.update(visible=False), gr.update() # No footer update if fail
+
+# Wrapper handlers to catch errors and provide hints
+def safe_handle(func, *args):
+    try:
+        return func(*args)
+    except Exception as e:
+        return None, f"SYSTEM ERROR: Execution Failed.\n> Traceback: {str(e)}\n\n> HINT: Check your logic.py implementation. Did you return the image object?"
 
 def handle_ch1(prompt):
+    return safe_handle(lambda: _handle_ch1_logic(prompt))
+
+def _handle_ch1_logic(prompt):
     img = logic.generate_hero(prompt)
     if not img: return None, "ERROR: No image generated. Check code."
     success, msg = verifier.verify_hero(img)
@@ -45,6 +72,9 @@ def handle_ch1(prompt):
     return img, log
 
 def handle_ch2(sign_text):
+    return safe_handle(lambda: _handle_ch2_logic(sign_text))
+
+def _handle_ch2_logic(sign_text):
     img = logic.generate_sign(sign_text)
     if not img: return None, "ERROR: No image generated."
     success, msg = verifier.verify_sign_text(img, sign_text)
@@ -52,6 +82,9 @@ def handle_ch2(sign_text):
     return img, log
 
 def handle_ch3(prompt):
+    return safe_handle(lambda: _handle_ch3_logic(prompt))
+
+def _handle_ch3_logic(prompt):
     img = logic.generate_wide_shot(prompt)
     if not img: return None, "ERROR: No image generated."
     success, msg = verifier.verify_aspect_ratio(img)
@@ -59,6 +92,9 @@ def handle_ch3(prompt):
     return img, log
 
 def handle_ch4(prompt):
+     return safe_handle(lambda: _handle_ch4_logic(prompt))
+
+def _handle_ch4_logic(prompt):
     img = logic.generate_lit_scene(prompt)
     if not img: return None, "ERROR: No image generated."
     success, msg = verifier.verify_lighting(img)
@@ -66,6 +102,9 @@ def handle_ch4(prompt):
     return img, log
 
 def handle_ch5(prompt, ref_img):
+     return safe_handle(lambda: _handle_ch5_logic(prompt, ref_img))
+
+def _handle_ch5_logic(prompt, ref_img):
     img = logic.generate_style_transfer(prompt, ref_img)
     if not img: return None, "ERROR: No image generated."
     success, msg = verifier.verify_style(img)
@@ -73,6 +112,9 @@ def handle_ch5(prompt, ref_img):
     return img, log
 
 def handle_ch6(prompt):
+    return safe_handle(lambda: _handle_ch6_logic(prompt))
+
+def _handle_ch6_logic(prompt):
     img = logic.generate_final(prompt)
     if not img: return None, "ERROR: No image generated."
     success, msg = verifier.verify_final(img)
@@ -81,150 +123,344 @@ def handle_ch6(prompt):
 
 # --- UI Builder ---
 APP_CSS = """
-.gradio-container {font-family: 'Share Tech Mono', monospace;}
-.locked-d {filter: grayscale(100%) blur(5px); pointer-events: none;}
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+/* Main Container - Digital Noir Background */
+.gradio-container {
+    background-color: #020202 !important;
+    background-image: 
+        linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95)), 
+        repeating-linear-gradient(0deg, transparent, transparent 2px, #00ffff 1px, transparent 3px),
+        url('file=assets/ui_background.png');
+    background-size: cover;
+    background-attachment: fixed;
+    color: #e0e0e0 !important;
+    height: 100vh !important;
+    max-height: 100vh !important; # Enforce strict height
+    overflow: hidden !important; # Prevent main scrollbar
+}
+
+#footer-status {
+    flex-shrink: 0;
+}
+
+.main-layout {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+    gap: 10px;
+}
+
+/* Allow panels to scroll internally if needed */
+.glass-panel {
+    overflow-y: auto;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Visualizer Responsive */
+.main-visualizer {
+    flex: 1;
+    height: 100% !important;
+    min-height: 0;
+    width: 100%;
+    object-fit: contain;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.main-visualizer img {
+    object-fit: contain;
+    max-height: 100%;
+    width: auto;
+}
+
+/* Scanline Effect Overlay (Subtler) */
+.scanlines {
+    background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0,0,0,0.1) 50%,
+        rgba(0,0,0,0.1)
+    );
+    background-size: 100% 4px;
+    position: fixed;
+    pointer-events: none;
+    top: 0; right: 0; bottom: 0; left: 0;
+    z-index: 999;
+    opacity: 0.4;
+}
+
+/* Neon Text & Fonts */
+.neon-text {
+    font-family: 'Share Tech Mono', monospace !important;
+    text-shadow: 0 0 2px #00ffff;
+}
+
+/* Terminal Log - Better Legibility */
+.terminal-log textarea {
+    background-color: #050505 !important;
+    color: #0aff0a !important; /* Matrix Green */
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    border: 1px solid #333 !important;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    text-shadow: none !important; /* Remove glow for readability */
+}
+
+/* Footer styling - Fixed Bottom Bar look */
+#footer-status {
+    background-color: #0d0d0d !important;
+    border-top: 2px solid #00ffff;
+    border-bottom: 1px solid #00ffff;
+    color: #00ffff !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    text-align: center;
+    padding: 12px;
+    margin-top: 20px;
+    font-size: 16px;
+    letter-spacing: 2px;
+    box-shadow: 0 -5px 15px rgba(0, 255, 255, 0.1);
+}
+
+/* Panel Styling */
+.glass-panel {
+    background: rgba(8, 8, 8, 0.95) !important;
+    border: 1px solid rgba(0, 243, 255, 0.2) !important;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    padding: 15px;
+    border-radius: 4px;
+    /* overflow-y handled in main-layout modification if needed, but adding defaults here */
+}
+
+/* Tab Navigation Styling */
+.tabs {
+    border-bottom: 1px solid #00ffff;
+    margin-bottom: 10px;
+}
+
+.tab-nav {
+    border-bottom: none !important;
+    gap: 4px; /* Space between tabs */
+}
+
+.tab-nav button {
+    border: 1px solid rgba(0, 243, 255, 0.3) !important;
+    border-bottom: none !important;
+    background: rgba(8, 8, 8, 0.8) !important;
+    margin-right: 2px !important;
+    border-radius: 4px 4px 0 0 !important;
+    color: #808080 !important; /* Default dim */
+    transition: all 0.3s ease;
+}
+
+.tab-nav button.selected {
+    border: 1px solid #00ffff !important;
+    border-bottom: 2px solid #000 !important; /* Fake merge with panel */
+    background: rgba(0, 243, 255, 0.1) !important;
+    color: #00ffff !important;
+    text-shadow: 0 0 5px #00ffff;
+    font-weight: bold;
+}
+
+/* Status Indicators for Tabs (Dynamic Classes not easily supported in pure Gradio without JS, 
+   so we rely on selected state and content styling, but we can try generic overrides if possible) 
+*/
+
+.access-denied {
+    color: #ff2a2a !important; /* Alert Red */
+    border: 1px solid #ff2a2a;
+    background: rgba(255, 42, 42, 0.1);
+    padding: 10px;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 5px rgba(255, 42, 42, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(255, 42, 42, 0.5); }
+    100% { box-shadow: 0 0 5px rgba(255, 42, 42, 0.2); }
+}
+
+.mission-header {
+    border-left: 3px solid #00ffff;
+    padding-left: 10px;
+    margin-bottom: 15px;
+}
+
+.locked-d {
+    filter: grayscale(100%) blur(5px) opacity(0.3);
+    pointer-events: none;
+}
 """
 
-with gr.Blocks(title="Gemini Comic Creator") as app:
+with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(), css=APP_CSS) as app:
     
-    # State mechanism to track progress 
-    # (Simplified: specific outputs trigger specific unlocks)
-
-    with gr.Row():
-        gr.Image(IMG_BANNER, show_label=False, container=False)
+    # State mechanism
+    current_chapter_state = gr.State("init")
     
-    with gr.Accordion("ACCESS RESTRICTION // CONTENT ADVISORY", open=False):
-         gr.Markdown("> **NOTICE:** This simulation contains high-contrast noir themes. User discretion is mandatory.")
+    # Scanline Overlay (Div hack)
+    gr.HTML("<div class='scanlines'></div>")
 
-    with gr.Tabs() as main_tabs:
+    # --- Header ---
+    with gr.Row(elem_classes=["glass-panel"]):
+        # Removed height constraint for bigger banner
+        gr.Image(IMG_BANNER, show_label=False, container=False, interactive=False)
+    
+    # --- Main Split View ---
+    with gr.Row(elem_classes=["main-layout"]):
         
-        # --- INIT ---
-        with gr.Tab("INIT // SETUP", id="init") as tab0:
-             gr.Markdown("### SYSTEM INITIALIZATION")
-             gr.Markdown("Identity verified. Welcome, Artist. Initialize workspace parameters.")
-             check_btn = gr.Button("RUN DIAGNOSTICS", variant="primary")
-             check_out = gr.Textbox(label="TERMINAL OUTPUT", lines=4)
-             
-        # --- CH 1 ---
-        with gr.Tab("CH 1: INK & FUR", interactive=True, id="ch1") as tab1:
-            with gr.Group(visible=True) as lock1:
-                gr.Image(IMG_LOCKED, show_label=False, container=False, width=100)
-                gr.Markdown("### 🔒 LOCKED. Complete INIT diagnostics.")
+        # === LEFT COLUMN: CONTROL DECK ===
+        with gr.Column(scale=1, elem_classes=["glass-panel"]):
             
-            with gr.Group(visible=False) as content1:
-                gr.Markdown("### MISSION: MANIFEST UNIT 9")
-                with gr.Row():
-                    p1 = gr.Textbox(label="PROMPT", placeholder="Cyberpunk cat...", scale=4)
-                    b1 = gr.Button("GENERATE", variant="primary", scale=1)
-                with gr.Row():
-                    o1 = gr.Image(label="RESULT")
-                    l1 = gr.Textbox(label="LOG", lines=3)
+            with gr.Tabs() as main_tabs:
+                
+                # --- INIT ---
+                with gr.Tab("INIT", id="init") as tab0:
+                     gr.Markdown("### > SYSTEM INITIALIZATION")
+                     gr.Markdown("*Identity verified. Welcome, Artist.*")
+                     gr.Markdown("Initializing connection to Neural Link...")
+                     check_btn = gr.Button("RUN DIAGNOSTICS [EXECUTE]", variant="primary")
+                
+                # --- CH 1 ---
+                with gr.Tab("CH 1", id="ch1", interactive=True) as tab1:
+                    with gr.Group(visible=True) as lock1:
+                        gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE DIAGNOSTICS</h3></div>")
+                    
+                    with gr.Group(visible=False) as content1:
+                        gr.HTML("<div class='mission-header'><h3>> MISSION: MANIFEST UNIT 9</h3></div>")
+                        gr.Markdown("The Construct is empty. Describe the Protagonist to manifest him.")
+                        p1 = gr.Textbox(label="INPUT PROMPT", placeholder="Cyberpunk cat detective, neon rain, trenchcoat...", lines=2)
+                        b1 = gr.Button("GENERATE [EXECUTE]", variant="primary")
 
-        # --- CH 2 ---
-        with gr.Tab("CH 2: THE LETTERER", interactive=True, id="ch2") as tab2:
-            with gr.Group(visible=True) as lock2:
-                gr.Image(IMG_LOCKED, show_label=False, container=False, width=100)
-                gr.Markdown("### 🔒 LOCKED. Complete CH 1.")
+                # --- CH 2 ---
+                with gr.Tab("CH 2", id="ch2", interactive=True) as tab2:
+                    with gr.Group(visible=True) as lock2:
+                        gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE CH 1</h3></div>")
+                    
+                    with gr.Group(visible=False) as content2:
+                        gr.HTML("<div class='mission-header'><h3>> MISSION: THE SILENT SIGN</h3></div>")
+                        gr.Markdown("The sign is blank. Use the prompt to LETTER the sign.")
+                        p2 = gr.Textbox(label="SIGN TEXT", placeholder="THE TERMINAL", lines=1)
+                        b2 = gr.Button("GENERATE [EXECUTE]", variant="primary")
+
+                # --- CH 3 ---
+                with gr.Tab("CH 3", id="ch3", interactive=True) as tab3:
+                    with gr.Group(visible=True) as lock3:
+                        gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE CH 2</h3></div>")
+                    with gr.Group(visible=False) as content3:
+                        gr.HTML("<div class='mission-header'><h3>> MISSION: CINEMATIC RATIO</h3></div>")
+                        gr.Markdown("The frame is too tight. Widen the lens to 16:9.")
+                        p3 = gr.Textbox(label="INPUT PROMPT", placeholder="High speed chase on cyber-bike...", lines=2)
+                        b3 = gr.Button("GENERATE [EXECUTE]", variant="primary")
+
+                # --- CH 4 ---
+                with gr.Tab("CH 4", id="ch4", interactive=True) as tab4:
+                     with gr.Group(visible=True) as lock4:
+                        gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE CH 3</h3></div>")
+                     with gr.Group(visible=False) as content4:
+                        gr.HTML("<div class='mission-header'><h3>> MISSION: LIGHTING & ATMOSPHERE</h3></div>")
+                        gr.Markdown("It's too dark. Add volumetric lighting and noir atmosphere.")
+                        p4 = gr.Textbox(label="INPUT PROMPT", placeholder="Hiding in shadows...", lines=2)
+                        b4 = gr.Button("GENERATE [EXECUTE]", variant="primary")
+
+                # --- CH 5 ---
+                with gr.Tab("CH 5", id="ch5", interactive=True) as tab5:
+                     with gr.Group(visible=True) as lock5:
+                        gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE CH 4</h3></div>")
+                     with gr.Group(visible=False) as content5:
+                        gr.HTML("<div class='mission-header'><h3>> MISSION: STYLE TRANSFER</h3></div>")
+                        gr.Markdown("An imposter appears. Render Unit 9 in a new style (e.g., Anime) using the reference.")
+                        p5 = gr.Textbox(label="STYLE PROMPT", placeholder="1980s Anime Style...", lines=2)
+                        # We might need a ref image input or assume fixed ref
+                        ref5 = gr.Image(label="REFERENCE SOURCE", type="pil", height=150) 
+                        b5 = gr.Button("GENERATE [EXECUTE]", variant="primary")
+
+                # --- CH 6 ---
+                with gr.Tab("CH 6", id="ch6", interactive=True) as tab6:
+                     with gr.Group(visible=True) as lock6:
+                        gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE CH 5</h3></div>")
+                     with gr.Group(visible=False) as content6:
+                        gr.HTML("<div class='mission-header'><h3>> MISSION: UPSCALING / FINAL</h3></div>")
+                        gr.Markdown("Stabilize the Construct. Generate the final 4K masterpiece.")
+                        p6 = gr.Textbox(label="INPUT PROMPT", placeholder="Masterpiece, 8k resolution...", lines=2)
+                        b6 = gr.Button("GENERATE [EXECUTE]", variant="primary")
+
+                # --- EPILOGUE ---
+                with gr.Tab("END", id="epilogue", interactive=True) as tabEnd:
+                     with gr.Group(visible=True) as lockEnd:
+                        gr.HTML("<div class='access-denied'><h3>🔒 LOCKED</h3></div>")
+                     with gr.Group(visible=False) as contentEnd:
+                        gr.HTML("<div class='mission-header'><h1>> MISSION ACCOMPLISHED</h1></div>")
+                        gr.Markdown("The comic is complete. The Construct is stable. Well done, Artist.")
             
-            with gr.Group(visible=False) as content2:
-                gr.Markdown("### MISSION: THE SILENT SIGN")
-                with gr.Row():
-                    p2 = gr.Textbox(label="SIGN TEXT", placeholder="THE TERMINAL", scale=4)
-                    b2 = gr.Button("GENERATE", variant="primary", scale=1)
-                with gr.Row():
-                    o2 = gr.Image(label="RESULT")
-                    l2 = gr.Textbox(label="LOG", lines=3)
+            # --- TERMINAL LOG (Global for Left Column) ---
+            gr.Markdown("### > SYSTEM LOG")
+            terminal_log = gr.Textbox(label="OUTPUT STREAM", lines=10, elem_classes=["terminal-log"], interactive=False)
 
-        # --- CH 3 ---
-        with gr.Tab("CH 3: WIDE ANGLE", interactive=True, id="ch3") as tab3:
-            with gr.Group(visible=True) as lock3:
-                gr.Image(IMG_LOCKED, show_label=False, container=False, width=100)
-                gr.Markdown("### 🔒 LOCKED. Complete CH 2.")
-            with gr.Group(visible=False) as content3:
-                gr.Markdown("### MISSION: CINEMATIC RATIO")
-                with gr.Row():
-                    p3 = gr.Textbox(label="PROMPT", placeholder="Chase scene...", scale=4)
-                    b3 = gr.Button("GENERATE", variant="primary", scale=1)
-                with gr.Row():
-                    o3 = gr.Image(label="RESULT")
-                    l3 = gr.Textbox(label="LOG", lines=3)
 
-        # --- CH 4 ---
-        with gr.Tab("CH 4: MOOD", interactive=True, id="ch4") as tab4:
-             with gr.Group(visible=True) as lock4:
-                gr.Image(IMG_LOCKED, show_label=False, container=False, width=100)
-                gr.Markdown("### 🔒 LOCKED. Complete CH 3.")
-             with gr.Group(visible=False) as content4:
-                gr.Markdown("### MISSION: LIGHTING & ATMOSPHERE")
-                with gr.Row():
-                    p4 = gr.Textbox(label="PROMPT", placeholder="Neon rain...", scale=4)
-                    b4 = gr.Button("GENERATE", variant="primary", scale=1)
-                with gr.Row():
-                    o4 = gr.Image(label="RESULT")
-                    l4 = gr.Textbox(label="LOG", lines=3)
+        # === RIGHT COLUMN: VISUALIZER ===
+        with gr.Column(scale=2, elem_classes=["glass-panel"]):
+            gr.Markdown("### > VISUAL FEED")
+            # Removed fixed height, added class for CSS control
+            visualizer = gr.Image(label="RENDER OUTPUT", interactive=False, elem_id="main-visualizer", elem_classes=["main-visualizer"])
 
-        # --- CH 5 ---
-        with gr.Tab("CH 5: STYLE TRAP", interactive=True, id="ch5") as tab5:
-             with gr.Group(visible=True) as lock5:
-                gr.Image(IMG_LOCKED, show_label=False, container=False, width=100)
-                gr.Markdown("### 🔒 LOCKED. Complete CH 4.")
-             with gr.Group(visible=False) as content5:
-                gr.Markdown("### MISSION: STYLE TRANSFER")
-                with gr.Row():
-                    p5 = gr.Textbox(label="PROMPT", placeholder="Anime style...", scale=3)
-                    # We might need a ref image input or assume fixed ref
-                    ref5 = gr.Image(label="REFERENCE (Unit 9)", type="pil", scale=1) 
-                    b5 = gr.Button("GENERATE", variant="primary", scale=1)
-                with gr.Row():
-                    o5 = gr.Image(label="RESULT")
-                    l5 = gr.Textbox(label="LOG", lines=3)
 
-        # --- CH 6 ---
-        with gr.Tab("CH 6: MASTERPIECE", interactive=True, id="ch6") as tab6:
-             with gr.Group(visible=True) as lock6:
-                gr.Image(IMG_LOCKED, show_label=False, container=False, width=100)
-                gr.Markdown("### 🔒 LOCKED. Complete CH 5.")
-             with gr.Group(visible=False) as content6:
-                gr.Markdown("### MISSION: UPSCALING / FINAL")
-                with gr.Row():
-                    p6 = gr.Textbox(label="PROMPT", placeholder="Masterpiece...", scale=4)
-                    b6 = gr.Button("GENERATE", variant="primary", scale=1)
-                with gr.Row():
-                    o6 = gr.Image(label="RESULT")
-                    l6 = gr.Textbox(label="LOG", lines=3)
-
-        # --- EPILOGUE ---
-        with gr.Tab("EPILOGUE", interactive=True, id="epilogue") as tabEnd:
-             with gr.Group(visible=True) as lockEnd:
-                gr.Image(IMG_LOCKED, show_label=False, container=False, width=100)
-                gr.Markdown("### 🔒 LOCKED. Complete CH 6.")
-             with gr.Group(visible=False) as contentEnd:
-                gr.Markdown("# MISSION ACCOMPLISHED")
-                gr.Markdown("The comic is complete. The Construct is stable. Well done, Artist.")
-                gr.Image(IMG_SUCCESS, show_label=False)
+    # --- Footer ---
+    footer = gr.Markdown("SYSTEM STATUS: 0% [....................] // CURRENT PHASE: INIT", elem_id="footer-status")
 
     # --- WIRING ---
+    
+    # Helper to update footer on unlock
+    # We need to chain the output of handle_X -> terminal_log & visualizer
+    # Then if success -> unlock next tab -> update footer
+
     # Init -> Check -> Unlock Ch1
-    check_btn.click(run_diagnostics, outputs=check_out).then(unlock_chapter, inputs=[gr.State("init"), check_out], outputs=[lock1, content1])
+    check_btn.click(run_diagnostics, outputs=terminal_log).then(
+        unlock_chapter, 
+        inputs=[gr.State("ch1"), terminal_log], 
+        outputs=[lock1, content1, footer]
+    )
     
     # Ch1 -> Generate -> Verify -> Unlock Ch2
-    b1.click(handle_ch1, inputs=p1, outputs=[o1, l1]).then(unlock_chapter, inputs=[gr.State("ch1"), l1], outputs=[lock2, content2])
+    b1.click(handle_ch1, inputs=p1, outputs=[visualizer, terminal_log]).then(
+        unlock_chapter, inputs=[gr.State("ch2"), terminal_log], outputs=[lock2, content2, footer]
+    )
 
     # Ch2 -> Generate -> Verify -> Unlock Ch3
-    b2.click(handle_ch2, inputs=p2, outputs=[o2, l2]).then(unlock_chapter, inputs=[gr.State("ch2"), l2], outputs=[lock3, content3])
+    b2.click(handle_ch2, inputs=p2, outputs=[visualizer, terminal_log]).then(
+        unlock_chapter, inputs=[gr.State("ch3"), terminal_log], outputs=[lock3, content3, footer]
+    )
 
     # Ch3 -> Generate -> Verify -> Unlock Ch4
-    b3.click(handle_ch3, inputs=p3, outputs=[o3, l3]).then(unlock_chapter, inputs=[gr.State("ch3"), l3], outputs=[lock4, content4])
+    b3.click(handle_ch3, inputs=p3, outputs=[visualizer, terminal_log]).then(
+        unlock_chapter, inputs=[gr.State("ch4"), terminal_log], outputs=[lock4, content4, footer]
+    )
 
     # Ch4 -> Generate -> Verify -> Unlock Ch5
-    b4.click(handle_ch4, inputs=p4, outputs=[o4, l4]).then(unlock_chapter, inputs=[gr.State("ch4"), l4], outputs=[lock5, content5])
+    b4.click(handle_ch4, inputs=p4, outputs=[visualizer, terminal_log]).then(
+        unlock_chapter, inputs=[gr.State("ch5"), terminal_log], outputs=[lock5, content5, footer]
+    )
 
     # Ch5 -> Generate -> Verify -> Unlock Ch6
-    b5.click(handle_ch5, inputs=[p5, ref5], outputs=[o5, l5]).then(unlock_chapter, inputs=[gr.State("ch5"), l5], outputs=[lock6, content6])
+    b5.click(handle_ch5, inputs=[p5, ref5], outputs=[visualizer, terminal_log]).then(
+        unlock_chapter, inputs=[gr.State("ch6"), terminal_log], outputs=[lock6, content6, footer]
+    )
 
     # Ch6 -> Generate -> Verify -> Unlock Epilogue
-    b6.click(handle_ch6, inputs=p6, outputs=[o6, l6]).then(unlock_chapter, inputs=[gr.State("ch6"), l6], outputs=[lockEnd, contentEnd])
+    b6.click(handle_ch6, inputs=p6, outputs=[visualizer, terminal_log]).then(
+        unlock_chapter, inputs=[gr.State("epilogue"), terminal_log], outputs=[lockEnd, contentEnd, footer]
+    )
 
 if __name__ == "__main__":
-    app.launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 8080)), allowed_paths=["assets"])
-
+    app.launch(
+        server_name="0.0.0.0", 
+        server_port=8000, 
+        allowed_paths=[ASSETS_DIR]
+    )
