@@ -23,15 +23,36 @@ CHAPTERS = ["init", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "epilogue"]
 
 # --- Handlers ---
 
+def format_log(message, type="info"):
+    """Formats a message as HTML with appropriate styling."""
+    colors = {
+        "info": "#0aff0a",     # Matrix Green
+        "success": "#0aff0a",  # Matrix Green
+        "warning": "#ffff00",  # Yellow
+        "error": "#ff2a2a"     # Alert Red
+    }
+    color = colors.get(type, "#0aff0a")
+    # Convert newlines to breaks for HTML
+    html_msg = message.replace("\n", "<br>")
+    return f"<div style='color: {color}; font-family: Share Tech Mono, monospace;'>{html_msg}</div>"
+
 def run_diagnostics():
     api_key = os.environ.get("GOOGLE_API_KEY")
-    if api_key:
-        if api_key == "PLACEHOLDER_KEY":
-            return "SYSTEM_CHECK: FAILED.\n> API Key: PLACEHOLDER_KEY detected. Please update .env"
-        if not re.match(r"^AIza[0-9A-Za-z-_]{35}$", api_key):
-             return "SYSTEM_CHECK: WARNING.\n> API Key: Format unrecognized. Proceed with caution.\n> Environment Variables: LOADED"
-        return "SYSTEM_CHECK: OPTIMAL.\n> Environment Variables: LOADED\n> API Key: DETECTED (Valid Format)"
-    return "SYSTEM_CHECK: FAILED.\n> API Key: MISSING. Please configure .env"
+    
+    # 1. Missing Key
+    if not api_key:
+        return format_log("SYSTEM_CHECK: FAILED.\n> API Key: MISSING. Please configure .env", "error")
+    
+    # 2. Placeholder Key
+    if api_key == "PLACEHOLDER_KEY":
+        return format_log("SYSTEM_CHECK: FAILED.\n> API Key: PLACEHOLDER_KEY detected. Please update .env", "error")
+    
+    # 3. Invalid Format (Strict Check)
+    if not re.match(r"^AIza[0-9A-Za-z-_]{35}$", api_key):
+         return format_log("SYSTEM_CHECK: FAILED.\n> API Key: Format unrecognized (Must start with 'AIza').\n> Please verify your GOOGLE_API_KEY in .env", "error")
+    
+    # 4. Success
+    return format_log("SYSTEM_CHECK: OPTIMAL.\n> Environment Variables: LOADED\n> API Key: DETECTED (Valid Format)", "success")
 
 def update_footer(chapter):
     """Updates the footer progress bar based on current chapter."""
@@ -50,6 +71,9 @@ def update_footer(chapter):
 
 
 def unlock_chapter(current_chapter, output_log):
+    # Strip HTML tags for keyword check to be safe, or just check simple substrings
+    # Since we control the output, checking for "OPTIMAL" or "SUCCESS" is fine
+    # purely as substrings.
     if "OPTIMAL" in output_log or "SUCCESS" in output_log:
         return gr.update(visible=False), gr.update(visible=True), update_footer(current_chapter)
     return gr.update(visible=True), gr.update(visible=False), gr.update() # No footer update if fail
@@ -59,16 +83,18 @@ def safe_handle(func, *args):
     try:
         return func(*args)
     except Exception as e:
-        return None, f"SYSTEM ERROR: Execution Failed.\n> Traceback: {str(e)}\n\n> HINT: Check your logic.py implementation. Did you return the image object?"
+        msg = f"SYSTEM ERROR: Execution Failed.\n> Traceback: {str(e)}\n\n> HINT: Check your logic.py implementation. Did you return the image object?"
+        return None, format_log(msg, "error")
 
 def handle_ch1(prompt):
     return safe_handle(lambda: _handle_ch1_logic(prompt))
 
 def _handle_ch1_logic(prompt):
     img = logic.generate_hero(prompt)
-    if not img: return None, "ERROR: No image generated. Check code."
+    if not img: return None, format_log("ERROR: No image generated. Check code.", "error")
     success, msg = verifier.verify_hero(img)
-    log = f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}"
+    log_type = "success" if success else "error"
+    log = format_log(f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}", log_type)
     return img, log
 
 def handle_ch2(sign_text):
@@ -76,9 +102,10 @@ def handle_ch2(sign_text):
 
 def _handle_ch2_logic(sign_text):
     img = logic.generate_sign(sign_text)
-    if not img: return None, "ERROR: No image generated."
+    if not img: return None, format_log("ERROR: No image generated.", "error")
     success, msg = verifier.verify_sign_text(img, sign_text)
-    log = f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}"
+    log_type = "success" if success else "error"
+    log = format_log(f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}", log_type)
     return img, log
 
 def handle_ch3(prompt):
@@ -86,9 +113,10 @@ def handle_ch3(prompt):
 
 def _handle_ch3_logic(prompt):
     img = logic.generate_wide_shot(prompt)
-    if not img: return None, "ERROR: No image generated."
+    if not img: return None, format_log("ERROR: No image generated.", "error")
     success, msg = verifier.verify_aspect_ratio(img)
-    log = f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}"
+    log_type = "success" if success else "error"
+    log = format_log(f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}", log_type)
     return img, log
 
 def handle_ch4(prompt):
@@ -96,9 +124,10 @@ def handle_ch4(prompt):
 
 def _handle_ch4_logic(prompt):
     img = logic.generate_lit_scene(prompt)
-    if not img: return None, "ERROR: No image generated."
+    if not img: return None, format_log("ERROR: No image generated.", "error")
     success, msg = verifier.verify_lighting(img)
-    log = f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}"
+    log_type = "success" if success else "error"
+    log = format_log(f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}", log_type)
     return img, log
 
 def handle_ch5(prompt, ref_img):
@@ -106,9 +135,10 @@ def handle_ch5(prompt, ref_img):
 
 def _handle_ch5_logic(prompt, ref_img):
     img = logic.generate_style_transfer(prompt, ref_img)
-    if not img: return None, "ERROR: No image generated."
+    if not img: return None, format_log("ERROR: No image generated.", "error")
     success, msg = verifier.verify_style(img)
-    log = f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}"
+    log_type = "success" if success else "error"
+    log = format_log(f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}", log_type)
     return img, log
 
 def handle_ch6(prompt):
@@ -116,9 +146,10 @@ def handle_ch6(prompt):
 
 def _handle_ch6_logic(prompt):
     img = logic.generate_final(prompt)
-    if not img: return None, "ERROR: No image generated."
+    if not img: return None, format_log("ERROR: No image generated.", "error")
     success, msg = verifier.verify_final(img)
-    log = f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}"
+    log_type = "success" if success else "error"
+    log = format_log(f"VERIFICATION: {'SUCCESS' if success else 'FAILURE'}\n> {msg}", log_type)
     return img, log
 
 # --- UI Builder ---
@@ -200,16 +231,19 @@ APP_CSS = """
     text-shadow: 0 0 2px #00ffff;
 }
 
-/* Terminal Log - Better Legibility */
-.terminal-log textarea {
+/* Terminal Log - Styled for HTML output */
+.terminal-log-box {
     background-color: #050505 !important;
-    color: #0aff0a !important; /* Matrix Green */
+    color: #0aff0a; /* Default color fallback */
     font-family: 'Share Tech Mono', monospace !important;
     font-size: 14px !important;
     line-height: 1.4 !important;
     border: 1px solid #333 !important;
     box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
-    text-shadow: none !important; /* Remove glow for readability */
+    padding: 10px;
+    height: 200px;
+    overflow-y: auto;
+    /* Optional: styled scrollbar */
 }
 
 /* Footer styling - Fixed Bottom Bar look */
@@ -235,7 +269,6 @@ APP_CSS = """
     backdrop-filter: blur(5px);
     padding: 15px;
     border-radius: 4px;
-    /* overflow-y handled in main-layout modification if needed, but adding defaults here */
 }
 
 /* Tab Navigation Styling */
@@ -267,10 +300,6 @@ APP_CSS = """
     text-shadow: 0 0 5px #00ffff;
     font-weight: bold;
 }
-
-/* Status Indicators for Tabs (Dynamic Classes not easily supported in pure Gradio without JS, 
-   so we rely on selected state and content styling, but we can try generic overrides if possible) 
-*/
 
 .access-denied {
     color: #ff2a2a !important; /* Alert Red */
@@ -402,8 +431,8 @@ with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(),
             
             # --- TERMINAL LOG (Global for Left Column) ---
             gr.Markdown("### > SYSTEM LOG")
-            terminal_log = gr.Textbox(label="OUTPUT STREAM", lines=10, elem_classes=["terminal-log"], interactive=False)
-
+            # Changed from Textbox to HTML for strict styling support (Red/Green)
+            terminal_log = gr.HTML(label="OUTPUT STREAM", elem_classes=["terminal-log-box"])
 
         # === RIGHT COLUMN: VISUALIZER ===
         with gr.Column(scale=2, elem_classes=["glass-panel"]):
