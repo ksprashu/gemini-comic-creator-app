@@ -166,13 +166,13 @@ APP_CSS = """
     background-size: cover;
     background-attachment: fixed;
     color: #e0e0e0 !important;
-    height: 75vh !important;  /* Reduced height as requested */
-    max-height: 75vh !important;
-    overflow: hidden !important;
-    margin: 5% auto; /* Center vertically with buffer */
-    border: 1px solid #333;
-    border-radius: 8px;
-    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    min-height: 100vh !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none;
+    border-radius: 0;
 }
 
 #footer-status {
