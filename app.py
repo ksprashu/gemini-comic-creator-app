@@ -71,10 +71,10 @@ def update_footer(chapter):
 
 
 def unlock_chapter(current_chapter, output_log):
-    # Strip HTML tags for keyword check to be safe, or just check simple substrings
-    # Since we control the output, checking for "OPTIMAL" or "SUCCESS" is fine
-    # purely as substrings.
-    if "OPTIMAL" in output_log or "SUCCESS" in output_log:
+    # Ensure log is a string and handle None
+    log_text = str(output_log).upper() if output_log else ""
+    
+    if "OPTIMAL" in log_text or "SUCCESS" in log_text:
         return gr.update(visible=False), gr.update(visible=True), update_footer(current_chapter)
     return gr.update(visible=True), gr.update(visible=False), gr.update() # No footer update if fail
 
@@ -157,11 +157,11 @@ APP_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
 /* Main Container - Digital Noir Background */
+/* Main Container - Digital Noir Background */
 .gradio-container {
     background-color: #020202 !important;
     background-image: 
         linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95)), 
-        repeating-linear-gradient(0deg, transparent, transparent 2px, #00ffff 1px, transparent 3px),
         url('file=assets/ui_background.png');
     background-size: cover;
     background-attachment: fixed;
