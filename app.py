@@ -166,9 +166,13 @@ APP_CSS = """
     background-size: cover;
     background-attachment: fixed;
     color: #e0e0e0 !important;
-    height: 100vh !important;
-    max-height: 100vh !important; # Enforce strict height
-    overflow: hidden !important; # Prevent main scrollbar
+    height: 75vh !important;  /* Reduced height as requested */
+    max-height: 75vh !important;
+    overflow: hidden !important;
+    margin: 5% auto; /* Center vertically with buffer */
+    border: 1px solid #333;
+    border-radius: 8px;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
 }
 
 #footer-status {
@@ -188,6 +192,14 @@ APP_CSS = """
     max-height: 100%;
     display: flex;
     flex-direction: column;
+}
+
+/* Header Image Constraint */
+.header-image img {
+    max-height: 120px !important; /* Force smaller banner */
+    width: auto !important;
+    object-fit: contain;
+    margin: 0 auto;
 }
 
 /* Visualizer Responsive */
@@ -241,9 +253,9 @@ APP_CSS = """
     border: 1px solid #333 !important;
     box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
     padding: 10px;
-    height: 200px;
+    height: 150px; /* Reduced for better fit */
+    flex-shrink: 0;
     overflow-y: auto;
-    /* Optional: styled scrollbar */
 }
 
 /* Footer styling - Fixed Bottom Bar look */
@@ -254,9 +266,9 @@ APP_CSS = """
     color: #00ffff !important;
     font-family: 'Share Tech Mono', monospace !important;
     text-align: center;
-    padding: 12px;
-    margin-top: 20px;
-    font-size: 16px;
+    padding: 8px; /* Reduced padding */
+    margin-top: 10px;
+    font-size: 14px; /* Reduced font size */
     letter-spacing: 2px;
     box-shadow: 0 -5px 15px rgba(0, 255, 255, 0.1);
 }
@@ -338,7 +350,7 @@ with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(),
     gr.HTML("<div class='scanlines'></div>")
 
     # --- Header ---
-    with gr.Row(elem_classes=["glass-panel"]):
+    with gr.Row(elem_classes=["glass-panel", "header-image"]):
         # Removed height constraint for bigger banner
         gr.Image(IMG_BANNER, show_label=False, container=False, interactive=False)
     
