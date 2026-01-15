@@ -196,7 +196,7 @@ APP_CSS = """
 
 /* Header Image Constraint */
 .header-image img {
-    max-height: 120px !important; /* Force smaller banner */
+    max-height: 400px !important; /* Force smaller banner */
     width: auto !important;
     object-fit: contain;
     margin: 0 auto;
