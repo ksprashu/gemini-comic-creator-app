@@ -157,7 +157,6 @@ APP_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
 /* Main Container - Digital Noir Background */
-/* Main Container - Digital Noir Background */
 .gradio-container {
     background-color: #020202 !important;
     background-image: 
