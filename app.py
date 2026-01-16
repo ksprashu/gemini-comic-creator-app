@@ -54,6 +54,17 @@ def run_diagnostics():
     # 4. Success
     return format_log("SYSTEM_CHECK: OPTIMAL.\n> Environment Variables: LOADED\n> API Key: DETECTED (Valid Format)", "success")
 
+CHAPTER_TITLES = {
+    "init": "CHAPTER 0: THE SETUP",
+    "ch1": "CHAPTER 1: INK & FUR",
+    "ch2": "CHAPTER 2: THE LETTERER",
+    "ch3": "CHAPTER 3: THE WIDE ANGLE",
+    "ch4": "CHAPTER 4: SETTING THE MOOD",
+    "ch5": "CHAPTER 5: THE STYLE TRAP",
+    "ch6": "CHAPTER 6: THE MASTERPIECE",
+    "epilogue": "EPILOGUE: THE SAVE FILE"
+}
+
 def update_footer(chapter):
     """Updates the footer progress bar based on current chapter."""
     try:
@@ -67,7 +78,9 @@ def update_footer(chapter):
     filled_length = int(bar_length * progress // 100)
     bar = "█" * filled_length + "." * (bar_length - filled_length)
     
-    return f"SYSTEM STATUS: {int(progress)}% [{bar}] // CURRENT PHASE: {chapter.upper()}"
+    chapter_title = CHAPTER_TITLES.get(chapter, chapter.upper())
+    
+    return f"SYSTEM STATUS: {int(progress)}% [{bar}] // CURRENT PHASE: {chapter_title}"
 
 
 def unlock_chapter(current_chapter, output_log):
@@ -280,6 +293,7 @@ APP_CSS = """
     backdrop-filter: blur(5px);
     padding: 15px;
     border-radius: 4px;
+    color: #ffffff !important;
 }
 
 /* Tab Navigation Styling */
@@ -313,12 +327,14 @@ APP_CSS = """
 }
 
 .access-denied {
-    color: #ff2a2a !important; /* Alert Red */
-    border: 1px solid #ff2a2a;
-    background: rgba(255, 42, 42, 0.1);
-    padding: 10px;
+    color: #ffffff !important; /* White text for legibility */
+    border: 2px solid #ff2a2a;
+    background: rgba(100, 0, 0, 0.9) !important; /* Dark Red solid-ish background */
+    padding: 15px;
     border-radius: 4px;
     font-family: 'Share Tech Mono', monospace;
+    font-weight: bold;
+    text-shadow: none; /* Clear text */
     animation: pulse-red 2s infinite;
 }
 
@@ -329,9 +345,18 @@ APP_CSS = """
 }
 
 .mission-header {
-    border-left: 3px solid #00ffff;
-    padding-left: 10px;
+    background: rgba(0, 50, 0, 0.9) !important; /* Dark Green solid-ish background */
+    border-left: 5px solid #00ff00;
+    padding: 15px;
     margin-bottom: 15px;
+    color: #ffffff !important; /* White text */
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.mission-header h3 {
+    color: #00ff00 !important;
+    margin: 0;
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
 }
 
 .locked-d {
@@ -453,7 +478,7 @@ with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(),
 
 
     # --- Footer ---
-    footer = gr.Markdown("SYSTEM STATUS: 0% [....................] // CURRENT PHASE: INIT", elem_id="footer-status")
+    footer = gr.Markdown("SYSTEM STATUS: 0% [....................] // CURRENT PHASE: CHAPTER 0: THE SETUP", elem_id="footer-status")
 
     # --- WIRING ---
     
