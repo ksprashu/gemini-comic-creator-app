@@ -344,19 +344,14 @@ APP_CSS = """
     100% { box-shadow: 0 0 5px rgba(255, 42, 42, 0.2); }
 }
 
-.mission-header {
-    background: rgba(0, 50, 0, 0.9) !important; /* Dark Green solid-ish background */
-    border-left: 5px solid #00ff00;
-    padding: 15px;
-    margin-bottom: 15px;
-    color: #ffffff !important; /* White text */
+/* Mission Instructions - Simple Cyan Text */
+.mission-instruction {
+    color: #00ffff !important;
     font-family: 'Share Tech Mono', monospace;
-}
-
-.mission-header h3 {
-    color: #00ff00 !important;
-    margin: 0;
-    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+    font-size: 16px;
+    margin-bottom: 10px;
+    background: transparent !important;
+    text-shadow: 0 0 2px #00ffff;
 }
 
 .locked-d {
@@ -400,7 +395,7 @@ with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(),
                     
                     with gr.Group(visible=False) as content1:
                         gr.HTML("<div class='mission-header'><h3>> MISSION: MANIFEST UNIT 9</h3></div>")
-                        gr.Markdown("The Construct is empty. Describe the Protagonist to manifest him.")
+                        gr.HTML("<div class='mission-instruction'>The Construct is empty. Describe the Protagonist to manifest him.</div>")
                         p1 = gr.Textbox(label="INPUT PROMPT", placeholder="Cyberpunk cat detective, neon rain, trenchcoat...", lines=2)
                         b1 = gr.Button("GENERATE [EXECUTE]", variant="primary")
 
@@ -411,7 +406,7 @@ with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(),
                     
                     with gr.Group(visible=False) as content2:
                         gr.HTML("<div class='mission-header'><h3>> MISSION: THE SILENT SIGN</h3></div>")
-                        gr.Markdown("The sign is blank. Use the prompt to LETTER the sign.")
+                        gr.HTML("<div class='mission-instruction'>The sign is blank. Use the prompt to LETTER the sign.</div>")
                         p2 = gr.Textbox(label="SIGN TEXT", placeholder="THE TERMINAL", lines=1)
                         b2 = gr.Button("GENERATE [EXECUTE]", variant="primary")
 
@@ -421,7 +416,7 @@ with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(),
                         gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE CH 2</h3></div>")
                     with gr.Group(visible=False) as content3:
                         gr.HTML("<div class='mission-header'><h3>> MISSION: CINEMATIC RATIO</h3></div>")
-                        gr.Markdown("The frame is too tight. Widen the lens to 16:9.")
+                        gr.HTML("<div class='mission-instruction'>The frame is too tight. Widen the lens to 16:9.</div>")
                         p3 = gr.Textbox(label="INPUT PROMPT", placeholder="High speed chase on cyber-bike...", lines=2)
                         b3 = gr.Button("GENERATE [EXECUTE]", variant="primary")
 
@@ -431,7 +426,7 @@ with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(),
                         gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE CH 3</h3></div>")
                      with gr.Group(visible=False) as content4:
                         gr.HTML("<div class='mission-header'><h3>> MISSION: LIGHTING & ATMOSPHERE</h3></div>")
-                        gr.Markdown("It's too dark. Add volumetric lighting and noir atmosphere.")
+                        gr.HTML("<div class='mission-instruction'>It's too dark. Add volumetric lighting and noir atmosphere.</div>")
                         p4 = gr.Textbox(label="INPUT PROMPT", placeholder="Hiding in shadows...", lines=2)
                         b4 = gr.Button("GENERATE [EXECUTE]", variant="primary")
 
@@ -441,7 +436,7 @@ with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(),
                         gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE CH 4</h3></div>")
                      with gr.Group(visible=False) as content5:
                         gr.HTML("<div class='mission-header'><h3>> MISSION: STYLE TRANSFER</h3></div>")
-                        gr.Markdown("An imposter appears. Render Unit 9 in a new style (e.g., Anime) using the reference.")
+                        gr.HTML("<div class='mission-instruction'>An imposter appears. Render Unit 9 in a new style (e.g., Anime) using the reference.</div>")
                         p5 = gr.Textbox(label="STYLE PROMPT", placeholder="1980s Anime Style...", lines=2)
                         # We might need a ref image input or assume fixed ref
                         ref5 = gr.Image(label="REFERENCE SOURCE", type="pil", height=150) 
@@ -453,7 +448,7 @@ with gr.Blocks(title="Gemini Comic Creator - Reality Engine", theme=get_theme(),
                         gr.HTML("<div class='access-denied'><h3>🔒 ACCESS DENIED // COMPLETE CH 5</h3></div>")
                      with gr.Group(visible=False) as content6:
                         gr.HTML("<div class='mission-header'><h3>> MISSION: UPSCALING / FINAL</h3></div>")
-                        gr.Markdown("Stabilize the Construct. Generate the final 4K masterpiece.")
+                        gr.HTML("<div class='mission-instruction'>Stabilize the Construct. Generate the final 4K masterpiece.</div>")
                         p6 = gr.Textbox(label="INPUT PROMPT", placeholder="Masterpiece, 8k resolution...", lines=2)
                         b6 = gr.Button("GENERATE [EXECUTE]", variant="primary")
 
